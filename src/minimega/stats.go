@@ -245,6 +245,7 @@ func bandwidthCollector() {
 		stats := make(map[string]*TapStat)
 
 		// get a list of every tap we own
+		vmLock.Lock()
 		for _, v := range vms {
 			for _, net := range v.Config().Networks {
 				stats[net.Tap] = &TapStat{
@@ -252,6 +253,7 @@ func bandwidthCollector() {
 				}
 			}
 		}
+		vmLock.Unlock()
 
 		// for each tap, get rx/tx bytes
 		for k, v := range stats {
