@@ -258,7 +258,7 @@ func webConnect(w http.ResponseWriter, r *http.Request) {
 	name := fields[1]
 
 	vms := GlobalVMs()
-	vm := vms.findVM(name, true)
+	vm := vms.findVM(name)
 	if vm == nil {
 		http.NotFound(w, r)
 		return

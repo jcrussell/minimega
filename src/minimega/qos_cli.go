@@ -83,7 +83,7 @@ func cliClearQos(c *minicli.Command, resp *minicli.Response) error {
 		return fmt.Errorf("invalid tap index %s", c.StringArgs["interface"])
 	}
 
-	return makeErrSlice(vms.ClearQoS(target, uint(tap)))
+	return makeErrSlice(mm.ClearQoS(target, uint(tap)))
 }
 
 func cliUpdateQos(c *minicli.Command, resp *minicli.Response) error {
@@ -105,7 +105,7 @@ func cliUpdateQos(c *minicli.Command, resp *minicli.Response) error {
 		return err
 	}
 
-	return makeErrSlice(vms.UpdateQos(target, uint(tap), op))
+	return makeErrSlice(mm.UpdateQos(target, uint(tap), op))
 }
 
 func cliParseQos(c *minicli.Command) (bridge.QosOption, error) {

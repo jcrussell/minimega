@@ -178,7 +178,7 @@ func cliVMConfig(c *minicli.Command, resp *minicli.Response) error {
 		return nil
 	} else if c.BoolArgs["clone"] {
 		// Clone the config of an existing vm
-		vm := vms.FindVM(c.StringArgs["vm"])
+		vm := mm.FindVM(c.StringArgs["vm"])
 		if vm == nil {
 			return vmNotFound(c.StringArgs["vm"])
 		}

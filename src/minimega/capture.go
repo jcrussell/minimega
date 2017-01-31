@@ -128,7 +128,7 @@ func clearCapture(captureType, bridgeOrVM, name string) (err error) {
 // writing the packets to the specified filename in PCAP format.
 func startCapturePcap(v string, iface int, filename string) error {
 	// get the vm
-	vm := vms.FindVM(v)
+	vm := mm.FindVM(v)
 	if vm == nil {
 		return vmNotFound(v)
 	}

@@ -89,7 +89,7 @@ func cliVNCPlay(c *minicli.Command, resp *minicli.Response) error {
 
 	fname := c.StringArgs["filename"]
 
-	vm, err := vms.FindKvmVM(c.StringArgs["vm"])
+	vm, err := mm.FindKvmVM(c.StringArgs["vm"])
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func cliVNCRecord(c *minicli.Command, resp *minicli.Response) error {
 
 	fname := c.StringArgs["filename"]
 
-	vm, err := vms.FindKvmVM(c.StringArgs["vm"])
+	vm, err := mm.FindKvmVM(c.StringArgs["vm"])
 	if err != nil {
 		return err
 	}

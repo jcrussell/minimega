@@ -68,10 +68,11 @@ var hostInfoFns = map[string]func() (string, error){
 	},
 	"name": func() (string, error) { return hostname, nil },
 	"vms": func() (string, error) {
-		return strconv.Itoa(vms.Count()), nil
+		return strconv.Itoa(mm.Count()), nil
 	},
 	"vmsall": func() (string, error) {
-		return strconv.Itoa(vms.CountAll()), nil
+		// TODO: Need to check all the states
+		return strconv.Itoa(mm.Count()), nil
 	},
 	"uptime": func() (string, error) {
 		uptime, err := hostStatsUptime()

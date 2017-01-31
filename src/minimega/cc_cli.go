@@ -210,7 +210,7 @@ func cliCCResponses(c *minicli.Command, resp *minicli.Response) error {
 		// active, check whether the VM is part of the active namespace. This
 		// is a fairly naive way to filter the responses...
 		if namespace != "" && isUUID(info.Name()) {
-			if vm := vms.FindVM(info.Name()); vm == nil {
+			if vm := mm.FindVM(info.Name()); vm == nil {
 				log.Debug("skipping VM: %v", info.Name())
 				return filepath.SkipDir
 			}
@@ -510,7 +510,7 @@ func cliCCProcess(c *minicli.Command, resp *minicli.Response) error {
 		}
 	} else {
 		// get the vm uuid
-		vm := vms.FindVM(v)
+		vm := mm.FindVM(v)
 		if vm == nil {
 			return vmNotFound(v)
 		}
@@ -520,7 +520,7 @@ func cliCCProcess(c *minicli.Command, resp *minicli.Response) error {
 
 	resp.Header = []string{"name", "uuid", "pid", "command"}
 	for _, uuid := range activeVms {
-		vm := vms.FindVM(uuid)
+		vm := mm.FindVM(uuid)
 		if vm == nil {
 			return vmNotFound(v)
 		}

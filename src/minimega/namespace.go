@@ -222,7 +222,7 @@ func (n *Namespace) hostLaunch(host string, queued QueuedVMs, respChan chan<- mi
 	// Launching the VMs locally
 	if host == hostname {
 		errs := []error{}
-		for err := range vms.Launch(n.Name, queued) {
+		for err := range mm.Launch(n.Name, queued) {
 			errs = append(errs, err)
 		}
 
@@ -306,6 +306,14 @@ func SetNamespace(name string) error {
 
 		return fmt.Errorf("already in namespace: %v", name)
 	}
+
+	if _, ok := savedStates[name]; !ok {
+		// create new state
+		savedStates[name] = NewState(name)
+	}
+
+	// update active state
+	mm = savedStates[name]
 
 	namespace = name
 	return nil

@@ -32,7 +32,7 @@ func tunnelHandler(ws *websocket.Conn) {
 	name := fields[1]
 
 	vms := GlobalVMs()
-	vm := vms.findVM(name, true)
+	vm := vms.findVM(name)
 	if vm == nil {
 		log.Errorln(vmNotFound(name))
 		return

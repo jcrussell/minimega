@@ -115,7 +115,7 @@ router takes a number of subcommands:
 func cliRouter(c *minicli.Command, resp *minicli.Response) error {
 	vmName := c.StringArgs["vm"]
 
-	vm := vms.FindVM(vmName)
+	vm := mm.FindVM(vmName)
 	if vm == nil {
 		return vmNotFound(vmName)
 	}
@@ -213,7 +213,7 @@ func cliClearRouter(c *minicli.Command, resp *minicli.Response) error {
 		return nil
 	}
 
-	vm := vms.FindVM(vmName)
+	vm := mm.FindVM(vmName)
 	if vm == nil {
 		return fmt.Errorf("no such vm %v", vmName)
 	}

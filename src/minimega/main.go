@@ -49,8 +49,6 @@ var (
 	f_panic      = flag.Bool("panic", false, "panic on quit, producing stack traces for debugging")
 	f_cgroup     = flag.String("cgroup", "/sys/fs/cgroup", "path to cgroup mount")
 
-	vms = VMs{}
-
 	hostname string
 	reserved = []string{Wildcard}
 
@@ -251,8 +249,8 @@ func teardown() {
 	vncClear()
 	dnsmasqKillAll()
 
-	vms.Kill(Wildcard)
-	vms.Flush()
+	mm.Kill(Wildcard)
+	mm.Flush()
 
 	ksmDisable()
 	containerTeardown()

@@ -69,22 +69,6 @@ func (vms VMs) Count() int {
 	vmLock.Lock()
 	defer vmLock.Unlock()
 
-	i := 0
-
-	for _, vm := range vms {
-		if inNamespace(vm) {
-			i += 1
-		}
-	}
-
-	return i
-}
-
-// CountAll is Count, regardless of namespace.
-func (vms VMs) CountAll() int {
-	vmLock.Lock()
-	defer vmLock.Unlock()
-
 	return len(vms)
 }
 
@@ -97,10 +81,6 @@ func (vms VMs) Info(masks []string, resp *minicli.Response) {
 	res := VMs{} // for res.Data
 
 	for _, vm := range vms {
-		if !inNamespace(vm) {
-			continue
-		}
-
 		// Update dynamic fields before querying info
 		vm.UpdateNetworks()
 
@@ -196,25 +176,14 @@ func (vms VMs) FindVM(s string) VM {
 	vmLock.Lock()
 	defer vmLock.Unlock()
 
-	return vms.findVM(s, true)
-}
-
-// FindVMNoNamespace finds a VM, ignoring the current namespace, based on its
-// ID, name, or UUID.
-func (vms VMs) FindVMNoNamespace(s string) VM {
-	vmLock.Lock()
-	defer vmLock.Unlock()
-
-	return vms.findVM(s, false)
+	return vms.findVM(s)
 }
 
 // findVM assumes vmLock is held.
-func (vms VMs) findVM(s string, checkNamespace bool) VM {
+func (vms VMs) findVM(s string) VM {
 	if id, err := strconv.Atoi(s); err == nil {
 		if vm, ok := vms[id]; ok {
-			if inNamespace(vm) || !checkNamespace {
-				return vm
-			}
+			return vm
 		}
 
 		return nil
@@ -222,10 +191,6 @@ func (vms VMs) findVM(s string, checkNamespace bool) VM {
 
 	// Search for VM by name or UUID
 	for _, vm := range vms {
-		if checkNamespace && !inNamespace(vm) {
-			continue
-		}
-
 		if vm.GetName() == s || vm.GetUUID() == s {
 			return vm
 		}
@@ -244,7 +209,7 @@ func (vms VMs) FindContainerVM(s string) (*ContainerVM, error) {
 
 // findContainerVM is FindContainerVM without locking vmLock.
 func (vms VMs) findContainerVM(s string) (*ContainerVM, error) {
-	vm := vms.findVM(s, true)
+	vm := vms.findVM(s)
 	if vm == nil {
 		return nil, vmNotFound(s)
 	}
@@ -266,7 +231,7 @@ func (vms VMs) FindKvmVM(s string) (*KvmVM, error) {
 
 // findKvmVm is FindKvmVM without locking vmLock.
 func (vms VMs) findKvmVM(s string) (*KvmVM, error) {
-	vm := vms.findVM(s, true)
+	vm := vms.findVM(s)
 	if vm == nil {
 		return nil, vmNotFound(s)
 	}
@@ -286,10 +251,6 @@ func (vms VMs) FindKvmVMs() []*KvmVM {
 	res := []*KvmVM{}
 
 	for _, vm := range vms {
-		if !inNamespace(vm) {
-			continue
-		}
-
 		if vm, ok := vm.(*KvmVM); ok {
 			res = append(res, vm)
 		}
@@ -458,11 +419,6 @@ func (vms VMs) Flush() {
 	defer vmLock.Unlock()
 
 	for i, vm := range vms {
-		// Skip VMs outside of current namespace
-		if !inNamespace(vm) {
-			continue
-		}
-
 		if vm.GetState()&(VM_QUIT|VM_ERROR) != 0 {
 			log.Info("deleting VM: %v", i)
 
@@ -539,10 +495,6 @@ func (vms VMs) ProcStats(d time.Duration) []*VMProcStats {
 	var mu sync.Mutex
 
 	for _, vm := range vms {
-		if !inNamespace(vm) {
-			continue
-		}
-
 		wg.Add(1)
 
 		go func(vm VM) {
@@ -652,10 +604,6 @@ func (vms VMs) apply(target string, concurrent bool, fn vmApplyFunc) []error {
 	}
 
 	for _, vm := range vms {
-		if !inNamespace(vm) {
-			continue
-		}
-
 		if wild || names[vm.GetName()] || ids[vm.GetID()] {
 			delete(names, vm.GetName())
 			delete(ids, vm.GetID())
@@ -716,7 +664,7 @@ func meshageVMLauncher() {
 			errs := []string{}
 
 			if len(errs) == 0 {
-				for err := range vms.Launch(cmd.Namespace, cmd.QueuedVMs) {
+				for err := range mm.Launch(cmd.Namespace, cmd.QueuedVMs) {
 					if err != nil {
 						errs = append(errs, err.Error())
 					}
@@ -829,10 +777,6 @@ func expandLaunchNames(arg string, vms VMs) ([]string, error) {
 		}
 
 		for _, vm := range vms {
-			if !inNamespace(vm) {
-				continue
-			}
-
 			if vm.GetName() == name {
 				return nil, fmt.Errorf("vm already exists with name `%s`", name)
 			}

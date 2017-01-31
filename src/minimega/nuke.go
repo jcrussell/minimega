@@ -102,7 +102,8 @@ func nukeState() {
 	vncClear()
 	clearAllCaptures()
 	ksmDisable()
-	vms.CleanDirs()
+	// TODO: vms won't be populated after a crash...
+	mm.CleanDirs()
 }
 
 // return names of bridges as shown in f_base/bridges. Optionally include

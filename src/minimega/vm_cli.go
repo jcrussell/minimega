@@ -468,15 +468,15 @@ func init() {
 }
 
 func cliVmStart(c *minicli.Command, resp *minicli.Response) error {
-	return makeErrSlice(vms.Start(c.StringArgs["target"]))
+	return makeErrSlice(mm.Start(c.StringArgs["target"]))
 }
 
 func cliVmStop(c *minicli.Command, resp *minicli.Response) error {
-	return makeErrSlice(vms.Stop(c.StringArgs["target"]))
+	return makeErrSlice(mm.Stop(c.StringArgs["target"]))
 }
 
 func cliVmKill(c *minicli.Command, resp *minicli.Response) error {
-	return makeErrSlice(vms.Kill(c.StringArgs["target"]))
+	return makeErrSlice(mm.Kill(c.StringArgs["target"]))
 }
 
 func cliVmInfo(c *minicli.Command, resp *minicli.Response) error {
@@ -485,7 +485,7 @@ func cliVmInfo(c *minicli.Command, resp *minicli.Response) error {
 		fields = vmInfoLite
 	}
 
-	vms.Info(fields, resp)
+	mm.Info(fields, resp)
 	return nil
 }
 
@@ -495,9 +495,9 @@ func cliVmCdrom(c *minicli.Command, resp *minicli.Response) error {
 	doVms := make([]*KvmVM, 0)
 
 	if arg == Wildcard {
-		doVms = vms.FindKvmVMs()
+		doVms = mm.FindKvmVMs()
 	} else {
-		vm, err := vms.FindKvmVM(arg)
+		vm, err := mm.FindKvmVM(arg)
 		if err != nil {
 			return err
 		}
@@ -549,7 +549,7 @@ func cliVmTag(c *minicli.Command, resp *minicli.Response) error {
 			return errors.New("cannot assign to wildcard")
 		}
 
-		vms.SetTag(target, key, value)
+		mm.SetTag(target, key, value)
 
 		return nil
 	}
@@ -560,7 +560,7 @@ func cliVmTag(c *minicli.Command, resp *minicli.Response) error {
 		resp.Header = []string{"id", "value"}
 	}
 
-	for _, tag := range vms.GetTags(target, key) {
+	for _, tag := range mm.GetTags(target, key) {
 		row := []string{strconv.Itoa(tag.ID)}
 
 		if key == Wildcard {
@@ -587,7 +587,7 @@ func cliClearVmTag(c *minicli.Command, resp *minicli.Response) error {
 		target = Wildcard
 	}
 
-	vms.ClearTags(target, key)
+	mm.ClearTags(target, key)
 
 	return nil
 }
@@ -622,7 +622,7 @@ func cliVmLaunch(c *minicli.Command, resp *minicli.Response) error {
 
 	// expand the names to launch, scheduler should have ensured that they were
 	// globally unique.
-	names, err := ExpandLaunchNames(c.StringArgs["name"], vms)
+	names, err := ExpandLaunchNames(c.StringArgs["name"], mm.VMs)
 	if err != nil {
 		return err
 	}
@@ -657,7 +657,7 @@ func cliVmLaunch(c *minicli.Command, resp *minicli.Response) error {
 	}
 
 	// default namespace: ""
-	errChan := vms.Launch("", QueuedVMs{names, vmType, vmConfig})
+	errChan := mm.Launch("", QueuedVMs{names, vmType, vmConfig})
 
 	// Collect all the errors from errChan and turn them into a string
 	collectErrs := func() error {
@@ -683,13 +683,13 @@ func cliVmLaunch(c *minicli.Command, resp *minicli.Response) error {
 }
 
 func cliVmFlush(c *minicli.Command, resp *minicli.Response) error {
-	vms.Flush()
+	mm.Flush()
 
 	return nil
 }
 
 func cliVmQmp(c *minicli.Command, resp *minicli.Response) error {
-	vm, err := vms.FindKvmVM(c.StringArgs["vm"])
+	vm, err := mm.FindKvmVM(c.StringArgs["vm"])
 	if err != nil {
 		return err
 	}
@@ -716,7 +716,7 @@ func cliVmScreenshot(c *minicli.Command, resp *minicli.Response) error {
 		max = v
 	}
 
-	vm := vms.FindVM(c.StringArgs["vm"])
+	vm := mm.FindVM(c.StringArgs["vm"])
 	if vm == nil {
 		return vmNotFound(c.StringArgs["vm"])
 	}
@@ -746,7 +746,7 @@ func cliVmMigrate(c *minicli.Command, resp *minicli.Response) error {
 	if _, ok := c.StringArgs["vm"]; !ok { // report current migrations
 		resp.Header = []string{"id", "name", "status", "complete (%%)"}
 
-		for _, vm := range vms.FindKvmVMs() {
+		for _, vm := range mm.FindKvmVMs() {
 			status, complete, err := vm.QueryMigrate()
 			if err != nil {
 				return err
@@ -765,7 +765,7 @@ func cliVmMigrate(c *minicli.Command, resp *minicli.Response) error {
 		return nil
 	}
 
-	vm, err := vms.FindKvmVM(c.StringArgs["vm"])
+	vm, err := mm.FindKvmVM(c.StringArgs["vm"])
 	if err != nil {
 		return err
 	}
@@ -774,7 +774,7 @@ func cliVmMigrate(c *minicli.Command, resp *minicli.Response) error {
 }
 
 func cliVmHotplug(c *minicli.Command, resp *minicli.Response) error {
-	vm, err := vms.FindKvmVM(c.StringArgs["vm"])
+	vm, err := mm.FindKvmVM(c.StringArgs["vm"])
 	if err != nil {
 		return err
 	}
@@ -837,7 +837,7 @@ func cliVmHotplug(c *minicli.Command, resp *minicli.Response) error {
 }
 
 func cliVmNetMod(c *minicli.Command, resp *minicli.Response) error {
-	vm := vms.FindVM(c.StringArgs["vm"])
+	vm := mm.FindVM(c.StringArgs["vm"])
 	if vm == nil {
 		return vmNotFound(c.StringArgs["vm"])
 	}
@@ -892,7 +892,7 @@ func cliVMTop(c *minicli.Command, resp *minicli.Response) error {
 		return strconv.FormatUint(i/(uint64(1)<<20), 10)
 	}
 
-	for _, s := range vms.ProcStats(d) {
+	for _, s := range mm.ProcStats(d) {
 		row := []string{s.Name}
 		if ns == nil {
 			row = append(row, s.Namespace)
