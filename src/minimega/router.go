@@ -45,9 +45,11 @@ type dhcp struct {
 	addr   string
 	low    string
 	high   string
+	mask   string
 	router string
 	dns    string
 	static map[string]string
+	relay  string
 }
 
 func (r *Router) String() string {
@@ -164,8 +166,13 @@ func (r *Router) generateConfig() error {
 	// dnsmasq
 	fmt.Fprintf(&out, "dnsmasq flush\n")
 	for _, d := range r.dhcp {
+		if d.relay != "" {
+			fmt.Fprintf(&out, "dnsmasq dhcp relay %v %v\n", d.addr, d.relay)
+			continue
+		}
+
 		if d.low != "" {
-			fmt.Fprintf(&out, "dnsmasq dhcp range %v %v %v\n", d.addr, d.low, d.high)
+			fmt.Fprintf(&out, "dnsmasq dhcp range %v %v %v %v\n", d.addr, d.low, d.high, d.mask)
 		}
 		if d.router != "" {
 			fmt.Fprintf(&out, "dnsmasq dhcp option router %v %v\n", d.addr, d.router)
@@ -407,11 +414,12 @@ func routerIsValidIP(i string) bool {
 	return true
 }
 
-func (r *Router) DHCPAddRange(addr, low, high string) error {
+func (r *Router) DHCPAddRange(addr, low, high, mask string) error {
 	d := r.dhcpFindOrCreate(addr)
 
 	d.low = low
 	d.high = high
+	d.mask = mask
 
 	return nil
 }
@@ -436,6 +444,18 @@ func (r *Router) DHCPAddStatic(addr, mac, ip string) error {
 	d := r.dhcpFindOrCreate(addr)
 
 	d.static[mac] = ip
+
+	return nil
+}
+
+func (r *Router) DHCPAddRelay(addr, ip string) error {
+	d := r.dhcpFindOrCreate(addr)
+
+	d.relay = ip
+
+	if d.low != "" {
+		log.Warn("dhcp relay takes precedence over dhcp server")
+	}
 
 	return nil
 }

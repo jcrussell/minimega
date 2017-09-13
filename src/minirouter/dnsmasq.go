@@ -23,9 +23,11 @@ type Dhcp struct {
 	Addr   string
 	Low    string
 	High   string
+	Mask   string
 	Router string
 	DNS    string
 	Static map[string]string
+	Relay  string
 }
 
 var (
@@ -38,10 +40,11 @@ func init() {
 		Patterns: []string{
 			"dnsmasq <flush,>",
 			"dnsmasq <commit,>",
-			"dnsmasq <dhcp,> <range,> <addr> <low> <high>",
+			"dnsmasq <dhcp,> <range,> <addr> <low> <high> [mask]",
+			"dnsmasq <dhcp,> <static,> <addr> <mac> <ip>",
 			"dnsmasq <dhcp,> option <router,> <addr> <server>",
 			"dnsmasq <dhcp,> option <dns,> <addr> <server>",
-			"dnsmasq <dhcp,> <static,> <addr> <mac> <ip>",
+			"dnsmasq <dhcp,> <relay,> <addr> <ip>",
 			"dnsmasq <dns,> <ip> <host>",
 			"dnsmasq <upstream,> <ip>",
 			"dnsmasq <ra,> <subnet>",
@@ -75,9 +78,11 @@ func handleDnsmasq(c *minicli.Command, r chan<- minicli.Responses) {
 			addr := c.StringArgs["addr"]
 			low := c.StringArgs["low"]
 			high := c.StringArgs["high"]
+			mask := c.StringArgs["mask"]
 			d := DHCPFindOrCreate(addr)
 			d.Low = low
 			d.High = high
+			d.Mask = mask
 		} else if c.BoolArgs["router"] {
 			addr := c.StringArgs["addr"]
 			server := c.StringArgs["server"]
@@ -94,6 +99,11 @@ func handleDnsmasq(c *minicli.Command, r chan<- minicli.Responses) {
 			ip := c.StringArgs["ip"]
 			d := DHCPFindOrCreate(addr)
 			d.Static[mac] = ip
+		} else if c.BoolArgs["relay"] {
+			addr := c.StringArgs["addr"]
+			ip := c.StringArgs["ip"]
+			d := DHCPFindOrCreate(addr)
+			d.Relay = ip
 		}
 	} else if c.BoolArgs["dns"] {
 		ip := c.StringArgs["ip"]
@@ -180,8 +190,15 @@ no-resolv
 dhcp-lease-max=4294967295
 {{ range $v := .DHCP }}
 # {{ $v.Addr }}
+{{ if ne $v.Relay "" }}
+	# note: dhcp-relay takes precedence over dhcp server
+	dhcp-relay={{ $v.Addr }},{{ $v.Relay}}
+{{ end }}
 {{ if ne $v.Low "" }}
 	dhcp-range=set:{{ $v.Addr }},{{ $v.Low }},{{ $v.High }}
+	{{- if ne $v.Mask "" -}}
+		,{{ $v.Mask }}
+	{{ end }}
 {{ else }}
 	dhcp-range=set:{{ $v.Addr }},{{ $v.Addr }},static
 {{ end }}

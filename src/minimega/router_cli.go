@@ -42,9 +42,14 @@ router takes a number of subcommands:
   and DNS server. For example, to serve a range of IPs, with 2 static IPs
   explicitly called out on router with IP 10.0.0.1:
 
-	router vm foo dhcp 10.0.0.0 range 10.0.0.2 10.0.0.254
-	router vm foo dhcp 10.0.0.0 static 00:11:22:33:44:55 10.0.0.10
-	router vm foo dhcp 10.0.0.0 static 00:11:22:33:44:56 10.0.0.11
+	router foo dhcp 10.0.0.0 range 10.0.0.2 10.0.0.254
+	router foo dhcp 10.0.0.0 static 00:11:22:33:44:55 10.0.0.10
+	router foo dhcp 10.0.0.0 static 00:11:22:33:44:56 10.0.0.11
+
+- 'dhcp relay': You may instead configure minirouter to relay DHCP requests to a
+  a DHCP server. This takes precedence over the DHCP server configurations.
+
+	router foo dhcp 10.0.0.0 relay 10.0.2.1
 
 - 'dns': Set DNS records for IPv4 or IPv6 hosts.
 
@@ -70,10 +75,11 @@ router takes a number of subcommands:
 			"router <vm> <commit,>",
 			"router <vm> <log,> <level,> <fatal,error,warn,info,debug>",
 			"router <vm> <interface,> <network> <IPv4/MASK or IPv6/MASK or dhcp>",
-			"router <vm> <dhcp,> <listen address> <range,> <low address> <high address>",
+			"router <vm> <dhcp,> <listen address> <range,> <low address> <high address> [mask]",
 			"router <vm> <dhcp,> <listen address> <router,> <router address>",
 			"router <vm> <dhcp,> <listen address> <dns,> <address>",
 			"router <vm> <dhcp,> <listen address> <static,> <mac> <ip>",
+			"router <vm> <dhcp,> <listen address> <relay,> <ip>",
 			"router <vm> <dns,> <ip> <hostname>",
 			"router <vm> <upstream,> <ip>",
 			"router <vm> <gw,> <gw>",
@@ -94,6 +100,7 @@ router takes a number of subcommands:
 			"clear router <vm> <interface,> <network> <IPv4/MASK or IPv6/MASK or dhcp>",
 			"clear router <vm> <dhcp,>",
 			"clear router <vm> <dhcp,> <listen address>",
+			"clear router <vm> <dhcp,> <listen address> <relay,>",
 			"clear router <vm> <dhcp,> <listen address> <range,>",
 			"clear router <vm> <dhcp,> <listen address> <router,>",
 			"clear router <vm> <dhcp,> <listen address> <dns,>",
@@ -165,7 +172,8 @@ func cliRouter(c *minicli.Command, resp *minicli.Response) error {
 		if c.BoolArgs["range"] {
 			low := c.StringArgs["low"]
 			high := c.StringArgs["high"]
-			return rtr.DHCPAddRange(addr, low, high)
+			mask := c.StringArgs["mask"]
+			return rtr.DHCPAddRange(addr, low, high, mask)
 		} else if c.BoolArgs["router"] {
 			r := c.StringArgs["router"]
 			return rtr.DHCPAddRouter(addr, r)
@@ -176,6 +184,9 @@ func cliRouter(c *minicli.Command, resp *minicli.Response) error {
 			mac := c.StringArgs["mac"]
 			ip := c.StringArgs["ip"]
 			return rtr.DHCPAddStatic(addr, mac, ip)
+		} else if c.BoolArgs["relay"] {
+			ip := c.StringArgs["ip"]
+			return rtr.DHCPAddRelay(addr, ip)
 		}
 	} else if c.BoolArgs["dns"] {
 		ip := c.StringArgs["ip"]
@@ -269,6 +280,8 @@ func cliClearRouter(c *minicli.Command, resp *minicli.Response) error {
 					return fmt.Errorf("no such mac: %v", mac)
 				}
 			}
+		} else if c.BoolArgs["relay"] {
+			d.relay = ""
 		} else {
 			delete(rtr.dhcp, addr)
 		}
